@@ -32,12 +32,16 @@ async function sendEmail(recipients, link) {
 async function sendSMS(recipients, link) {
     const results = [];
     for (const number of recipients) {
-        const msg = await twilioClient.messages.create({
-            body: `Please visit the following link: ${link}`,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: number
-        });
-        results.push(msg);
+        try {
+            const msg = await twilioClient.messages.create({
+                body: `Please visit the following link: ${link}`,
+                from: process.env.TWILIO_PHONE_NUMBER,
+                to: number
+            });
+            results.push(msg);
+        } catch (err) {
+            console.error(`Failed to send SMS to ${number}:`, err);
+        }
     }
     return results;
 }
