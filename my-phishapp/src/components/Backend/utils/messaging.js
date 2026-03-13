@@ -16,9 +16,7 @@ const transporter = nodemailer.createTransport({
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS:", process.env.EMAIL_PASS ? "LOADED" : "MISSING");
 
-// Configure Twilio (replace with your Twilio credentials)
-const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-
+// Send email to recipients
 async function sendEmail(recipients, link) {
     const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -29,6 +27,8 @@ async function sendEmail(recipients, link) {
     return transporter.sendMail(mailOptions);
 }
 
+// Configure Twilio (replace with your Twilio credentials)
+const twilioClient = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 async function sendSMS(recipients, link) {
     const results = [];
     for (const number of recipients) {

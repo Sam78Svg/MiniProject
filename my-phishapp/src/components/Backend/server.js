@@ -101,5 +101,17 @@ app.get('/api/reports', async (req, res) => {
     }
 });
 
+// Clear all campaign reports
+app.delete('/api/clear_reports', async (req, res) => {
+    try {
+        const sql = `DELETE FROM campaigns`;
+        await dbConfig.execute(sql);
+        res.json({ message: "All reports cleared successfully" });
+    } catch (err) {
+        console.error("Clear reports error:", err);
+        res.status(500).json({ message: "Failed to clear reports" });
+    }
+});
+
 
 app.listen(5000, () => console.log('Server running on port 5000'));

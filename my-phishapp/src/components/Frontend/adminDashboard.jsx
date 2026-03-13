@@ -117,6 +117,31 @@ function AdminDashboard() {
         }
     };
 
+    // Handle clearing all reports
+    const handleClearReports = async () => {
+        if (window.confirm("Are you sure you want to delete all reports? This action cannot be undone.")) {
+            try {
+                const response = await fetch("http://localhost:5000/api/clear_reports", {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert("All reports cleared successfully!");
+                    setReports([]);
+                } else {
+                    alert("Error: " + (result.message || "Failed to clear reports."));
+                }
+            } catch (error) {
+                console.error("Error clearing reports:", error);
+                alert("Failed to clear reports.");
+            }
+        }
+    };
+
 
 
     return (
@@ -212,15 +237,17 @@ function AdminDashboard() {
 
                     {activeTab === "reports" && (
                         <div className="tab-pane fade show active" id="reports" role="tabpanel">
-                            <h4>Campaign Performance & Awareness Reports</h4>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Campaign Performance & Awareness Reports</h4>
+                                <button className="btn btn-danger" onClick={handleClearReports}>Clear All Reports</button>
+                            </div>
                             <table className="table table-striped mt-3">
                                 <thead>
                                     <tr>
                                         <th>Campaign Name</th>
-                                        <th>email_template</th>
-                                        <th>target_group</th>
+                                        <th>Email Template</th>
+                                        <th>Target Group</th>
                                         <th>Sent Date</th>
-
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -304,8 +331,8 @@ function AdminDashboard() {
                             </form>
                         </div>
                     )}
-                </div>
-            </div>
+                </div >
+            </div >
         </>
     );
 }
