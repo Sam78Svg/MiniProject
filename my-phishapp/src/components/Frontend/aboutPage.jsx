@@ -10,7 +10,7 @@ function AboutPage() {
                     <div className="col-lg-7">
                         <h2 className="fw-bold mb-3">About PhishAware</h2>
                         <p className="lead">
-                            <strong>PhishAware</strong> is an academic project developed by MCA students at the Institute of Management and Career Courses (IMCC), Pune. Our mission is to empower organizations and individuals to defend against the ever-evolving threat of phishing and social engineering attacks.
+                            <strong>PhishAware</strong> is an academic project developed by <strong>Ganesh Kide</strong> and <strong>Sangmeshwar Kendre</strong> at the Institute of Management and Career Courses (IMCC), Pune. Our mission is to empower organizations and individuals to defend against the ever-evolving threat of phishing and social engineering attacks.
                         </p>
                         <p>
                             The platform provides a safe environment for simulating phishing attacks, enabling employees to recognize, report, and learn from real-world scenarios. By bridging the gap between theoretical knowledge and practical defense, PhishAware helps organizations foster a culture of cybersecurity awareness.
@@ -56,9 +56,9 @@ function AboutPage() {
                     <div className="col-lg-12">
                         <h3 className="fw-bold mb-3">Contact & Credits</h3>
                         <p>
-                            <strong>Developed by:</strong> MCA Students, IMCC Pune<br />
+                            <strong>Developed by:</strong> Ganesh Kide and Sangmeshwar Kendre, IMCC Pune<br />
                             <strong>Contact:</strong> info@phishaware.com<br />
-                            <strong>Academic Guide:</strong> Prof. [Guide Name], IMCC Pune
+                            <strong>Academic Guide:</strong> Prof. Mansi Bhate Mam, IMCC Pune
                         </p>
                     </div>
                 </div>

@@ -6,6 +6,8 @@ import Home from "./components/Frontend/homePage";
 import FeedBack from "./components/Frontend/feedBack";
 import AboutPage from "./components/Frontend/aboutPage";
 import FeaturePage from "./components/Frontend/featurePage";
+import logoImg from "./components/Resource/log.jpg";
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -14,6 +16,7 @@ function App() {
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div className="container">
           <Link className="navbar-brand d-flex align-items-center" to="/">
+            <img src={logoImg} className="img img-fluid" style={{ width: "80px", height: "50px", borderRadius: "24px" }} alt="logo" />
             <i className="bi bi-shield-lock-fill me-2"></i>
             PhishAware
           </Link>

@@ -37,24 +37,3 @@
     transform: rotate(360deg);
   }
 }
-
-.hero-section {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080/?cybersecurity,technology');
-  background-size: cover;
-  background-position: center;
-  color: white;
-  padding: 100px 0;
-}
-
-.feature-icon {
-  font-size: 3rem;
-  color: #0d6efd;
-  margin-bottom: 1rem;
-}
-
-.imcc-footer {
-  background-color: #212529;
-  color: #aaa;
-  padding: 20px 0;
-  text-align: center;
-}
