@@ -1,5 +1,4 @@
-import React from "react";
-import '../../Styling/Frontend/homePage.css';
+import '../Styling/homePage.css';
 import { BsEnvelopeExclamation, BsLightningCharge, BsGraphUpArrow, BsShieldLock, BsBarChartLine, BsPeople } from "react-icons/bs";
 
 function FeaturePage() {

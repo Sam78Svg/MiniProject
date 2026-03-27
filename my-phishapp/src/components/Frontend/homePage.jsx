@@ -1,5 +1,4 @@
-import React from "react";
-import '../../Styling/Frontend/homePage.css';
+import '../Styling/homePage.css';
 import LoginPage from './loginPage.jsx';
 import logImg from '../Resource/log.jpg';
 import { Link, Routes, Route } from 'react-router-dom';

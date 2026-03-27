@@ -41,7 +41,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/employee" element={<EmployeeDashboard />} />
-          <Route path="/feedback" element={<FeedBack />} />
+          <Route path="/feedback/:cid" element={<FeedBack />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/features" element={<FeaturePage />} />
         </Routes>

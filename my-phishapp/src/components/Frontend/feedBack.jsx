@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import '../../Styling/Frontend/login.css';
+import { useParams, useSearchParams } from "react-router-dom";
+import '../Styling/login.css';
 
 function FeedBack() {
     const [breached, setBreached] = useState(false);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+
 
     const handleSubmit = (e) => {
         e.preventDefault();

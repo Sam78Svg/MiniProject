@@ -1,28 +1,139 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import '../Styling/adminDashboard.css';
+import { Editor, EditorProvider } from "react-simple-wysiwyg";
 
 function AdminDashboard() {
+
+    // CAMPAIGN CREATION STATES
     const [campaignName, setCampaignName] = useState("");
-    const [emailTemplate, setEmailTemplate] = useState("Password Expiry Notification");
+    const [emailTemplate, setEmailTemplate] = useState("");
     const [targetGroup, setTargetGroup] = useState("All Employees");
     const [successLink, setSuccessLink] = useState("");
     const [showSuccess, setShowSuccess] = useState(false);
     const [reports, setReports] = useState([]);
     const [activeTab, setActiveTab] = useState("create");
-    const [sendMode, setSendMode] = useState("Email"); // New state for send mode
+
+    // SEND CAMPAIGN STATES
+    const [sendMode, setSendMode] = useState("Email");
     const [recipients, setRecipients] = useState([]);
-    const [recipientInput, setRecipientInput] = useState("");
+    const [selectedGroup, setSelectedGroup] = useState("");
+    const [recipientList, setRecipientList] = useState([]);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const limit = 5;
+
+    // TEMPLATE STATES
+    const [templates, setTemplates] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [templateName, setTemplateName] = useState("");
+    const [templateContent, setTemplateContent] = useState("");
+    const [editingTemplate, setEditingTemplate] = useState(null);
+
+    // Target group options
+    const [targetGroups, setTargetGroups] = useState([]);
+
+    //local storage user
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        fetch("http://localhost:5000/api/target-groups")
+            .then(res => res.json())
+            .then(data => setTargetGroups(data))
+            .then(data => console.log("Fetched groups:", data))
+    }, []);
+
+    //Fetch name from local storage
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    }, []);
 
 
-    // Handle campaign creation form submission
+
+    //Send campaign Use Effect to fetch recipients based on selected group and page
+    useEffect(() => {
+        if (!selectedGroup) return;
+
+        fetch(`http://localhost:5000/api/recipients?group=${selectedGroup}&page=${page}&limit=${limit}`)
+            .then(res => res.json())
+            .then(data => {
+                setRecipientList(data.data || []);
+                setTotal(data.total || 0);
+            })
+            .then(data => console.log("Fetched recipients:", data))
+            .catch(() => {
+                setRecipientList([]);
+                setTotal(0);
+            });
+
+    }, [selectedGroup, page]);
+
+    // ================= FETCH TEMPLATES =================
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
+
+    const fetchTemplates = async () => {
+        const res = await fetch("http://localhost:5000/api/templates");
+        const data = await res.json();
+        setTemplates(data);
+    };
+
+    // ================= SAVE TEMPLATE =================
+    const handleSaveTemplate = async () => {
+        if (!templateName || !templateContent)
+            return alert("Fill all fields");
+
+        if (editingTemplate) {
+            await fetch(`http://localhost:5000/api/templates/${editingTemplate.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: templateName,
+                    content: templateContent
+                })
+            });
+        } else {
+            await fetch("http://localhost:5000/api/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: templateName,
+                    content: templateContent
+                })
+            });
+        }
+
+        setShowModal(false);
+        setTemplateName("");
+        setTemplateContent("");
+        setEditingTemplate(null);
+        fetchTemplates();
+    };
+
+    // ================= DELETE TEMPLATE =================
+    const handleDeleteTemplate = async (id) => {
+        await fetch(`http://localhost:5000/api/templates/${id}`, {
+            method: "DELETE"
+        });
+        fetchTemplates();
+    };
+
+    // ================= CREATE CAMPAIGN =================
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Create unique link FIRST
+        const generatedLink = window.location.origin + "/feedback/";
+
         try {
+            // Save campaign
             const response = await fetch("http://localhost:5000/api/save_campaign", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     campaign_name: campaignName,
                     email_template: emailTemplate,
@@ -30,310 +141,373 @@ function AdminDashboard() {
                 })
             });
 
-            const result = await response.json();
+            const data = await response.json();
 
-            if (response.ok) {
-                const link = window.location.origin + "/feedback";
-                setSuccessLink(link);
-                setShowSuccess(true);
-                // Optionally reset form
-                setCampaignName("");
-                setEmailTemplate("Password Expiry Notification");
-                setTargetGroup("All Employees");
-            } else {
-                alert('Error: ' + result.message);
+            if (!response.ok) {
+                return alert(data.message || "Failed to save campaign");
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to connect to the server.');
-        }
-    };
 
-    // Handle adding a recipient
-    const handleAddRecipient = (e) => {
-        e.preventDefault();
-        if (recipientInput.trim() && !recipients.includes(recipientInput.trim())) {
-            setRecipients([...recipients, recipientInput.trim()]);
-            setRecipientInput("");
-        }
-    };
-
-    // Handle removing a recipient
-    const handleRemoveRecipient = (index) => {
-        setRecipients(recipients.filter((_, i) => i !== index));
-    };
-
-    // Handle sending campaign
-    const handleSendCampaign = async (e) => {
-        e.preventDefault();
-        if (recipients.length === 0) {
-            alert("Please add at least one recipient.");
-            return;
-        }
-        if (!successLink.trim()) {
-            alert("Please enter a link to send.");
-            return;
-        }
-        try {
-            const response = await fetch("http://localhost:5000/api/send_campaign", {
+            //Save link ONLY if campaign saved
+            const savedLinkRes = await fetch("http://localhost:5000/api/saveLink", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    mode: sendMode,
-                    recipients: recipients,
-                    link: successLink.trim()
+                    link_desc: generatedLink,
+                    link_status: "active",
+                    target_group: targetGroup
                 })
             });
-            const result = await response.json();
-            if (response.ok) {
-                alert("Campaign link sent successfully to all recipients!");
-                setRecipients([]);
-                setSuccessLink("");
-            } else {
-                alert("Error: " + (result.message || "Failed to send."));
+
+            if (!savedLinkRes.ok) {
+                console.error("Link saving failed");
             }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Failed to send campaign.");
+
+            // Update Template UI
+            setSuccessLink(generatedLink);
+            setShowSuccess(true);
+            setCampaignName("");
+
+            console.log("Campaign + Link saved successfully ✅");
+
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong");
         }
     };
 
+    // ================= SEND CAMPAIGN =================
+    const handleSendCampaign = async () => {
+        const emails = recipientList.map(r => r.email);
+
+        if (emails.length === 0) return alert("No recipients");
+
+        const res = await fetch("http://localhost:5000/api/send_campaign", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                mode: sendMode.toLowerCase(),
+                recipients: emails,
+                link: successLink
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) return alert(data.message);
+
+        alert("Campaign sent successfully 🚀");
+    };
+
+    // ================= REPORTS =================
     useEffect(() => {
-        if (activeTab === "reports") {
-            fetchReports();
-        }
+        if (activeTab === "reports") fetchReports();
     }, [activeTab]);
 
     const fetchReports = async () => {
+        const res = await fetch("http://localhost:5000/api/reports");
+        const data = await res.json();
+        setReports(data.data || data);
+    };
+
+    // ================= Copy =================
+    const handleCopy = async () => {
         try {
-            const response = await fetch("http://localhost:5000/api/reports");
-            const data = await response.json();
-            console.log(data);
-            setReports(data);
-        } catch (error) {
-            console.error("Failed to fetch reports:", error);
+            await navigator.clipboard.writeText(successLink);
+            alert("Link copied to clipboard ✅");
+        } catch (err) {
+            console.error("Copy failed", err);
         }
     };
-
-    // Handle clearing all reports
-    const handleClearReports = async () => {
-        if (window.confirm("Are you sure you want to delete all reports? This action cannot be undone.")) {
-            try {
-                const response = await fetch("http://localhost:5000/api/clear_reports", {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert("All reports cleared successfully!");
-                    setReports([]);
-                } else {
-                    alert("Error: " + (result.message || "Failed to clear reports."));
-                }
-            } catch (error) {
-                console.error("Error clearing reports:", error);
-                alert("Failed to clear reports.");
-            }
-        }
-    };
-
-
 
     return (
-        <>
-            <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-                <div className="container-fluid">
-                    <span className="navbar-brand">Phishing Simulator Admin</span>
-                    <div className="d-flex">
-                        <Link to="/login" className="btn btn-outline-light btn-sm">Logout</Link>
-                    </div>
-                </div>
-            </nav>
+        <div className="d-flex" style={{ minHeight: "100vh", background: "#f4f6f9" }}>
 
-            <div className="container mt-4">
-                <ul className="nav nav-tabs" id="adminTabs" role="tablist">
-                    <li className="nav-item" role="presentation">
-                        <button
-                            className={`nav-link${activeTab === "create" ? " active" : ""}`}
-                            type="button"
-                            onClick={() => setActiveTab("create")}
-                        >
-                            Create Campaign
-                        </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                        <button
-                            className={`nav-link${activeTab === "reports" ? " active" : ""}`}
-                            type="button"
-                            onClick={() => setActiveTab("reports")}
-                        >
-                            Awareness Reports
-                        </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                        <button
-                            className={`nav-link${activeTab === "send" ? " active" : ""}`}
-                            type="button"
-                            onClick={() => setActiveTab("send")}
-                        >
-                            Send Campaign
-                        </button>
-                    </li>
-                </ul>
-                <div className="tab-content p-3 border border-top-0 rounded-bottom" id="myTabContent">
-                    {activeTab === "create" && (
-                        <div className="tab-pane fade show active" id="create" role="tabpanel">
-                            <h4>Create New Phishing Simulation</h4>
-                            <form className="mt-3" onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label className="form-label">Campaign Name</label>
+            {/* SIDEBAR */}
+            <div style={{ width: "240px", background: "#1e293b", color: "white" }} className="p-3">
+                <h4>Admin Panel</h4>
+
+                <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("create")}>Create</button>
+                <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("send")}>Send</button>
+                <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("reports")}>Reports</button>
+
+                <Link to="/login" className="btn btn-outline-light w-100 mt-4">Logout</Link>
+            </div>
+
+            {/* MAIN */}
+            <div className="flex-grow-1 p-4">
+
+                {/* CREATE */}
+                {activeTab === "create" && (
+                    <div className="card p-4">
+                        <h4>Create Campaign</h4>
+
+                        <form onSubmit={handleSubmit}>
+                            <input className="form-control mb-3"
+                                placeholder="Campaign Name"
+                                value={campaignName}
+                                onChange={e => setCampaignName(e.target.value)}
+                            />
+
+                            <select className="form-control mb-3"
+                                value={emailTemplate}
+                                onChange={(e) => {
+                                    if (e.target.value === "new") {
+                                        setShowModal(true);
+                                    } else {
+                                        setEmailTemplate(e.target.value);
+                                    }
+                                }}
+                            >
+                                <option value="">Select Template</option>
+
+                                {templates.map(t => (
+                                    <option key={t.id} value={t.value}>
+                                        {t.name}
+                                    </option>
+                                ))}
+
+                                <option value="new">+ Create Email Template</option>
+                            </select>
+
+                            <select
+                                value={targetGroup}
+                                onChange={e => setTargetGroup(e.target.value)}
+                                className="form-control mb-3"
+                            >
+                                <option value="">Select Group</option>
+                                {targetGroups.map((g, i) => (
+                                    <option key={i} value={g}>{g}</option>
+                                ))}
+                            </select>
+
+                            <button className="btn btn-success">Launch</button>
+                        </form>
+
+                        {showSuccess && (
+                            <div className="alert alert-success mt-3">
+                                <p>Campaign Created ✅</p>
+
+                                <div className="d-flex align-items-center">
                                     <input
                                         type="text"
-                                        className="form-control"
-                                        placeholder="e.g., 'Urgent Payroll Update'"
-                                        required
-                                        value={campaignName}
-                                        onChange={e => setCampaignName(e.target.value)}
+                                        className="form-control me-2"
+                                        value={successLink}
+                                        readOnly
                                     />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Email Template</label>
-                                    <select
-                                        className="form-select"
-                                        value={emailTemplate}
-                                        onChange={e => setEmailTemplate(e.target.value)}
+
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleCopy}
                                     >
-                                        <option>Password Expiry Notification</option>
-                                        <option>Urgent Document Shared</option>
-                                        <option>Unusual Sign-in Activity</option>
-                                    </select>
+                                        Copy
+                                    </button>
                                 </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Target Group</label>
-                                    <select
-                                        className="form-select"
-                                        value={targetGroup}
-                                        onChange={e => setTargetGroup(e.target.value)}
-                                    >
-                                        <option>All Employees</option>
-                                        <option>Finance Dept</option>
-                                        <option>IT Dept</option>
-                                    </select>
+                            </div>
+                        )}
+
+                        {/* MODAL */}
+                        {showModal && (
+                            <div id="modal-body">
+                                <div id="modal-content">
+                                    <h4>Create Template</h4>
+
+                                    <input className="form-control mb-2"
+                                        placeholder="Template Name"
+                                        value={templateName}
+                                        onChange={e => setTemplateName(e.target.value)}
+                                    />
+
+                                    <div id="editorSection">
+                                        <EditorProvider>
+                                            <Editor
+                                                value={templateContent}
+                                                onChange={(e) => setTemplateContent(e.target.value)}
+                                            />
+                                        </EditorProvider>
+                                    </div>
+
+                                    <div className="mt-3 text-end">
+                                        <button className="btn btn-secondary me-2"
+                                            onClick={() => setShowModal(false)}>
+                                            Cancel
+                                        </button>
+
+                                        <button className="btn btn-primary"
+                                            onClick={handleSaveTemplate}>
+                                            Save
+                                        </button>
+                                    </div>
                                 </div>
-                                <button type="submit" className="btn btn-success">Launch Campaign</button>
-                            </form>
-                            {showSuccess && (
-                                <div className="alert alert-success mt-3">
-                                    Campaign launched! Simulation link generated: <strong>{successLink}</strong>
+                            </div>
+                        )}
+
+                        {/* TEMPLATE LIST */}
+                        <div className="mt-4">
+                            <h5>Manage Templates</h5>
+
+                            {templates.map(t => (
+                                <div key={t.id} className="d-flex justify-content-between mb-2">
+                                    <span>{t.name}</span>
+
+                                    <div>
+                                        <button className="btn btn-sm btn-warning me-2"
+                                            onClick={() => {
+                                                setEditingTemplate(t);
+                                                setTemplateName(t.name);
+                                                setTemplateContent(t.content);
+                                                setShowModal(true);
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button className="btn btn-sm btn-danger"
+                                            onClick={() => handleDeleteTemplate(t.id)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* SEND */}
+                {activeTab === "send" && (
+                    <div className="card p-4">
+                        <h4>Send Campaign</h4>
+
+                        {/* TARGET GROUP SELECT */}
+                        <div className="mb-3">
+                            <label>Select Target Group</label>
+                            <select
+                                className="form-control"
+                                value={selectedGroup}
+                                onChange={(e) => {
+                                    setSelectedGroup(e.target.value);
+                                    setPage(1);
+                                }}
+                            >
+                                <option value="">Select Group</option>
+                                {(targetGroups || []).map((g, i) => (
+                                    <option key={i} value={g}>{g}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* LINK */}
+                        <div className="mb-3">
+                            <label>Campaign Link</label>
+                            <input
+                                className="form-control"
+                                value={successLink}
+                                readOnly
+                            />
+                        </div>
+
+                        {/* RECIPIENT LIST */}
+                        <div className="mt-3">
+                            <h5>Recipients</h5>
+
+                            {recipientList.length === 0 ? (
+                                <p className="text-muted">No users found</p>
+                            ) : (
+                                <div className="border rounded p-2" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                                    {recipientList.map((r, i) => (
+                                        <div
+                                            key={i}
+                                            className="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom"
+                                        >
+                                            <div>
+                                                <strong>{r.name}</strong><br />
+                                                <small>{r.email}</small>
+                                            </div>
+
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => {
+                                                    setRecipientList(prev =>
+                                                        prev.filter((_, index) => index !== i)
+                                                    );
+                                                }}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
-                    )}
 
-                    {activeTab === "reports" && (
-                        <div className="tab-pane fade show active" id="reports" role="tabpanel">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4>Campaign Performance & Awareness Reports</h4>
-                                <button className="btn btn-danger" onClick={handleClearReports}>Clear All Reports</button>
+                        {/* PAGINATION */}
+                        {recipientList.length > 0 && (
+                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                <button
+                                    className="btn btn-secondary"
+                                    disabled={page === 1}
+                                    onClick={() => setPage(prev => prev - 1)}
+                                >
+                                    ⬅ Prev
+                                </button>
+
+                                <span>Page {page}</span>
+
+                                <button
+                                    className="btn btn-secondary"
+                                    disabled={page * limit >= total}
+                                    onClick={() => setPage(prev => prev + 1)}
+                                >
+                                    Next ➡
+                                </button>
                             </div>
-                            <table className="table table-striped mt-3">
-                                <thead>
-                                    <tr>
-                                        <th>Campaign Name</th>
-                                        <th>Email Template</th>
-                                        <th>Target Group</th>
-                                        <th>Sent Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {reports.map((report, idx) => (
-                                        <tr key={idx}>
-                                            <td>{report.campaign_name}</td>
-                                            <td>{report.email_template}</td>
-                                            <td>{report.target_group}</td>
-                                            <td>{report.sent_date}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === "send" && (
-                        <div className="tab-pane fade show active" id="send" role="tabpanel">
-                            <h4>Send Campaign</h4>
-                            <form className="mt-3" onSubmit={handleSendCampaign}>
-                                <div className="mb-3">
-                                    <label className="form-label">Mode to Send</label>
-                                    <select
-                                        className="form-select"
-                                        value={sendMode}
-                                        onChange={e => setSendMode(e.target.value)}
-                                    >
-                                        <option value="Email">Emails</option>
-                                        <option value="sms">Mobile</option>
-                                    </select>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Link to Send</label>
-                                    <input
-                                        type="url"
-                                        className="form-control"
-                                        placeholder="Enter the link to send"
-                                        value={successLink}
-                                        required
-                                    />
-                                </div>
-                                {/* Recipients Section */}
-                                <div className="mb-3">
-                                    <label className="form-label">
-                                        Add {sendMode === "sms" ? "Phone Numbers" : "Emails"}
-                                    </label>
-                                    <div className="input-group mb-2">
-                                        <input
-                                            type={sendMode === "sms" ? "tel" : "email"}
-                                            className="form-control"
-                                            placeholder={sendMode === "sms" ? "Enter phone number" : "Enter email"}
-                                            value={recipientInput}
-                                            onChange={e => setRecipientInput(e.target.value)}
-                                        />
-                                        <button
-                                            className="btn btn-outline-secondary"
-                                            type="button"
-                                            onClick={handleAddRecipient}
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                    {recipients.length > 0 && (
-                                        <ul className="list-group">
-                                            {recipients.map((rec, idx) => (
-                                                <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
-                                                    {rec}
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-danger"
-                                                        onClick={() => handleRemoveRecipient(idx)}
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                                <button type="submit" className="btn btn-primary">Send Campaign</button>
-                            </form>
-                        </div>
-                    )}
-                </div >
-            </div >
-        </>
+                        {/* SEND BUTTON */}
+                        <button
+                            className="btn btn-primary mt-4 w-100"
+                            onClick={handleSendCampaign}
+                        >
+                            Send Campaign
+                        </button>
+                    </div>
+                )}
+
+                {/* REPORTS */}
+                {activeTab === "reports" && (
+                    <div className="card p-4">
+                        <h4>Reports</h4>
+
+                        <table className="table mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Template</th>
+                                    <th>Group</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {reports.map((r, i) => (
+                                    <tr key={i}>
+                                        <td>{r.campaign_name}</td>
+                                        <td>{r.email_template}</td>
+                                        <td>{r.target_group}</td>
+                                        <td>{r.sent_date}</td>
+                                        <td>
+                                            <button className="btn btn-sm btn-outline-primary">View</button>
+                                        </td>
+
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }
 

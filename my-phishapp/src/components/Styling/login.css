@@ -13,3 +13,14 @@
      border-radius: 10px;
      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
  }
+
+ /* radio buttons styling */
+ input[type="radio"] {
+     margin-right: 6px;
+     cursor: pointer;
+ }
+
+ .card-body2 label {
+     font-weight: 500;
+     cursor: pointer;
+ }

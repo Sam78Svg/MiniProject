@@ -17,7 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require('./auth.js');
 app.use('/api/auth', authRoutes);
 
-// API endpoint to handle campaign creation and file upload
+// API endpoint to handle campaign creation and 
 app.post('/api/save_campaign', async (req, res) => {
     console.log("BODY RECEIVED:", req.body);
     const { campaign_name, email_template, target_group } = req.body;
@@ -29,8 +29,8 @@ app.post('/api/save_campaign', async (req, res) => {
     // Save campaign info and file path to MySQL
     try {
         const sql = `
-            INSERT INTO campaigns (name, template_type, target_group, created_at)
-            VALUES (?, ?, ?, NOW())
+            INSERT INTO campaigns (name, template_type, target_group,created_at)
+            VALUES (?, ?, ?,NOW())
         `;
         await dbConfig.execute(sql, [
             campaign_name,
@@ -41,6 +41,44 @@ app.post('/api/save_campaign', async (req, res) => {
     } catch (err) {
         console.error("DB error:", err);
         res.status(500).json({ message: "Database error" });
+    }
+});
+
+//load target groups for dropdown
+app.get('/api/target-groups', async (req, res) => {
+    try {
+        const [rows] = await dbConfig.execute(
+            `SELECT DISTINCT department FROM users`
+        );
+
+        const groups = rows.map(r => r.department);
+
+        res.json(groups); // ✅ MUST be array
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch groups" });
+    }
+});
+
+
+
+// Api endpoint to save links
+app.post('/api/saveLink', async (req, res) => {
+    const { link_desc, link_status, target_group } = req.body;
+    if (!link_desc || !link_status || !target_group) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+    try {
+        const sql =
+            "INSERT INTO links (link_desc, link_status, target_group) VALUES (?, ?, ?)"
+
+        await dbConfig.execute(sql, [link_desc, link_status, target_group]);
+        res.json({ message: "Link saved successfully" });
+    }
+    catch (err) {
+        console.error("DB error:", err);
+        return res.status(500).json({ message: "Database error" });
     }
 });
 
@@ -79,27 +117,64 @@ app.get('/api/test-email', async (req, res) => {
     }
 });
 
+// endpoint to fetch recipients based on group with pagination
+app.get('/api/recipients', async (req, res) => {
+    const { group, page = 1, limit = 5 } = req.query;
+    const offset = (page - 1) * limit;
 
-// Fetch campaign reports
-app.get('/api/reports', async (req, res) => {
     try {
-        const sql = `
-            SELECT 
-                name AS campaign_name,
-                template_type AS email_template,
-                target_group,
-                created_at AS sent_date
-            FROM campaigns
-            ORDER BY created_at DESC
-        `;
+        const [rows] = await dbConfig.execute(
+            `SELECT name, email FROM users WHERE department = ? LIMIT ? OFFSET ?`,
+            [group, Number(limit), Number(offset)]
+        );
 
-        const [rows] = await dbConfig.execute(sql);
-        res.json(rows);
+        const [count] = await dbConfig.execute(
+            `SELECT COUNT(*) as total FROM users WHERE department = ?`,
+            [group]
+        );
+
+        res.json({
+            data: rows,
+            total: count[0].total
+        });
+
     } catch (err) {
-        console.error("Report fetch error:", err);
-        res.status(500).json({ message: "Failed to fetch reports" });
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch recipients" });
     }
 });
+
+//================= REPORT APIs =================
+
+// Endpoint to save campaign report
+app.post('/api/save_report', async (req, res) => {
+    const { campaign_id, email, clicked, submitted } = req.body;
+    try {
+        await dbConfig.execute(
+            "INSERT INTO reports (campaign_id, email, clicked, submitted) VALUES (?, ?, ?, ?)",
+            [campaign_id, email, clicked, submitted]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
+// Endpoint to fetch campaign reports
+app.get('/api/reports', async (req, res) => {
+    try {
+        const [reports] = await dbConfig.execute(
+            `select name as campaign_name, template_type as email_template,target_group as target_group, created_at as sent_date from campaigns`
+        );
+        res.json(reports);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
 
 // Clear all campaign reports
 app.delete('/api/clear_reports', async (req, res) => {
@@ -113,5 +188,81 @@ app.delete('/api/clear_reports', async (req, res) => {
     }
 });
 
+// ================= TEMPLATE APIs =================
+
+// CREATE TEMPLATE
+app.post('/api/templates', async (req, res) => {
+    const { name, content } = req.body;
+
+    if (!name || !content)
+        return res.json({ success: false, message: "All fields required" });
+
+    try {
+        await dbConfig.execute(
+            "INSERT INTO templates (name, content) VALUES (?, ?)",
+            [name, content]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
+// GET ALL TEMPLATES
+app.get('/api/templates', async (req, res) => {
+    try {
+        const [templates] = await dbConfig.execute("SELECT * FROM templates");
+        res.json(templates);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
+// UPDATE TEMPLATE
+app.put('/api/templates/:id', async (req, res) => {
+    const { name, content } = req.body;
+    const { id } = req.params;
+
+    try {
+        await dbConfig.execute(
+            "UPDATE templates SET name=?, content=? WHERE id=?",
+            [name, content, id]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
+// DELETE TEMPLATE
+app.delete('/api/templates/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        await dbConfig.execute("DELETE FROM templates WHERE id=?", [id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "DB error" });
+    }
+});
+
+// emloyee Data 
+app.post('api/userExist', async (req, res) => {
+    const [username] = req.body;
+    try {
+        const [getUser] = await dbConfig.execute('select name from users where name=?', [username]);
+        res.status(200).json(success = true, getUser.name)
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "db error" })
+    }
+})
 
 app.listen(5000, () => console.log('Server running on port 5000'));

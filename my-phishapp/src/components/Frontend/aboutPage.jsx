@@ -1,5 +1,4 @@
-import React from "react";
-import '../../Styling/Frontend/homePage.css';
+import '../Styling/homePage.css';
 import logImg from '../Resource/log.jpg';
 
 function AboutPage() {

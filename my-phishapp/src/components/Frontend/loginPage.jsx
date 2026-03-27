@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import '../../Styling/Frontend/login.css';
+import '../Styling/login.css';
 import SignUp from "./signUp";
 
 function LoginPage() {
@@ -10,6 +10,11 @@ function LoginPage() {
     const [forgetEmail, setForgetEmail] = useState("");
     const [error, setError] = useState("");
     const navigate = useNavigate();
+
+    //user store logic
+    localStorage.setItem("user", JSON.stringify({
+        name: loginUsername
+    }));
 
     // Handle login form submit
     const handleLogin = async (e) => {
@@ -25,13 +30,17 @@ function LoginPage() {
                 })
             });
             const data = await res.json();
+
             if (res.ok && data.success) {
-                // Use backend username to decide panel
-                const uname = (data.username || "").trim().toLowerCase();
-                if (uname === "admin" || uname === "hr") {
+                // NEW LOGIC BASED ON TYPE
+                if (data.type === "admin") {
                     navigate("/admin");
-                } else {
+                    localStorage.setItem("user", JSON.stringify(data));
+                } else if (data.type === "employee") {
                     navigate("/employee");
+                    localStorage.setItem("user", JSON.stringify(data));
+                } else {
+                    setError("Unknown user type");
                 }
             } else {
                 setError(data.message || "Login failed.");
@@ -58,7 +67,7 @@ function LoginPage() {
                                 <h3 className="text-center mb-4">Awareness Portal Login</h3>
                                 <form onSubmit={handleLogin}>
                                     <div className="mb-3">
-                                        <label htmlFor="login-username" className="form-label">Username</label>
+                                        <label htmlFor="login-username" className="form-label">Username / Email</label>
                                         <input
                                             type="text"
                                             className="form-control"
