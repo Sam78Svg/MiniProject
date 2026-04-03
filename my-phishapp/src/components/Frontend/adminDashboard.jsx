@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import '../Styling/adminDashboard.css';
+import Gemini from './chatBot';
 import { Editor, EditorProvider } from "react-simple-wysiwyg";
 
 function AdminDashboard() {
@@ -39,8 +40,12 @@ function AdminDashboard() {
     useEffect(() => {
         fetch("http://localhost:5000/api/target-groups")
             .then(res => res.json())
-            .then(data => setTargetGroups(data))
-            .then(data => console.log("Fetched groups:", data))
+            .then(data => {
+                setTargetGroups(data);
+                if (data.length > 0) {
+                    setSelectedGroup(data[0]); // ✅ auto select valid group
+                }
+            });
     }, []);
 
     //Fetch name from local storage
@@ -57,14 +62,17 @@ function AdminDashboard() {
     useEffect(() => {
         if (!selectedGroup) return;
 
-        fetch(`http://localhost:5000/api/recipients?group=${selectedGroup}&page=${page}&limit=${limit}`)
+        console.log("SELECTED GROUP:", selectedGroup);
+
+        fetch(`http://localhost:5000/api/recipients?group=${encodeURIComponent(selectedGroup)}&page=${page}&limit=${limit}`)
             .then(res => res.json())
             .then(data => {
+                console.log("Fetched recipients:", data);
                 setRecipientList(data.data || []);
                 setTotal(data.total || 0);
             })
-            .then(data => console.log("Fetched recipients:", data))
-            .catch(() => {
+            .catch((err) => {
+                console.error("Fetch error:", err);
                 setRecipientList([]);
                 setTotal(0);
             });
@@ -229,7 +237,7 @@ function AdminDashboard() {
                 <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("create")}>Create</button>
                 <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("send")}>Send</button>
                 <button className="btn btn-dark w-100 mb-2" onClick={() => setActiveTab("reports")}>Reports</button>
-
+                <Link to="/gemini" className="btn btn-outline-light w-100 mt-4">Chat wit AI</Link>
                 <Link to="/login" className="btn btn-outline-light w-100 mt-4">Logout</Link>
             </div>
 

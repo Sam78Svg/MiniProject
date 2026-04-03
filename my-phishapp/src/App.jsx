@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Login from "./components/Frontend/loginPage";
 import AdminDashboard from "./components/Frontend/adminDashboard";
 import EmployeeDashboard from "./components/Frontend/employeeDashboard";
+import Gemini from './components/Frontend/chatBot'
 import Home from "./components/Frontend/homePage";
 import FeedBack from "./components/Frontend/feedBack";
 import AboutPage from "./components/Frontend/aboutPage";
@@ -41,6 +42,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/employee" element={<EmployeeDashboard />} />
+          <Route path="/gemini" element={<Gemini />} />
           <Route path="/feedback/:cid" element={<FeedBack />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/features" element={<FeaturePage />} />

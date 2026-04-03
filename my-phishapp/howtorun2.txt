@@ -1,0 +1,85 @@
+Here’s your clean, professional README.md file — ready to copy & paste into your project:
+
+# 🚀 Mini Project Setup Guide
+
+This guide will help you set up and run the project on your local machine.
+
+---
+
+## ✅ Prerequisites
+
+Make sure you have the following installed:
+
+- **Node.js** (v16 or above)  
+  https://nodejs.org
+
+- **Git**  
+  https://git-scm.com
+
+- **VS Code** (recommended)  
+  Install the **Live Server extension** (optional)
+
+---
+
+## 📥 Getting the Project
+
+1. Create a folder on your Desktop
+2. Open **VS Code**
+3. Open the folder:
+
+  Ctrl + K → Ctrl + O
+
+4. Open terminal:
+  Ctrl + J
+
+
+5. Check installations:
+```terminal
+git --version
+node -v
+
+Clone the repository:
+
+git clone https://github.com/Sam78Svg/MiniProject.git
+📦 Install Dependencies
+
+Go to project folder:
+
+cd MiniProject/my-phishapp
+
+Install all dependencies:
+
+npm install
+🗄️ Database Setup (MySQL)
+Open MySQL Workbench
+
+Open file:
+
+createDatabase.sql
+Run all queries
+
+Then open:
+
+randomUsers.sql
+Run queries to insert sample users
+▶️ Running the Project
+🔹 Start Frontend (React)
+cd MiniProject/my-phishapp
+npm start
+🔹 Start Backend (Node.js)
+
+Open a new terminal:
+
+cd MiniProject/my-phishapp/src/components/Backend
+node server.js
+⚠️ Important Notes
+Ensure MySQL is running before starting backend
+
+If dependencies fail:
+
+npm install --legacy-peer-deps
+If port is already in use, change it in server.js
+🎯 Output
+Frontend: http://localhost:3000
+Backend: http://localhost:5000
+ (or configured port)

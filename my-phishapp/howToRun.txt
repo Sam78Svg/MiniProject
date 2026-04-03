@@ -1,0 +1,42 @@
+what needed
+    1.install node js
+    2.install git 
+
+
+in vs code 
+    live server extension
+
+how to get project
+    1.create a older on desktop
+    2.go to vs code
+    3.oppen the folder in vs code using ctrl+k older
+    4.pres ctrl + j opens terminal 
+    4.check git and node js version git -v press enter then
+     node -v should be 2.5 or abouve and 24 or abouve
+    
+    5.write git clone https://github.com/Sam78Svg/MiniProject.git
+        it will download project. you will see a foleder named miniProject 
+    
+
+what to download
+    1. when project is downloaded click + icon on terminal
+    2. write cd ./miniProject/my-phishapp then enter
+    3. write npm install to get all you need (takes tiem)
+    4. go sql workbench write queris given in createDatabase.sql file (copy paste ) run the queris
+    4. after creation clear every thing and write queries given in randomUsers.sql  and run (gives rand 500 users make you on fome sign in page)
+
+how to run most importan
+    1. after eveything done.
+    2. click on + icon right side on terminal 
+        then cd ./miniProject/my-phishapp (press enter)
+        then write npm start (enter) starts react server
+
+    3. click on + icon again new terminal opens
+        then cd ./miniproject/my-phishapp/src/components/Backend/
+            (enter)
+        then write node server.js
+
+
+
+
+

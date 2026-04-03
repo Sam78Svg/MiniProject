@@ -117,29 +117,47 @@ app.get('/api/test-email', async (req, res) => {
     }
 });
 
-// endpoint to fetch recipients based on group with pagination
 app.get('/api/recipients', async (req, res) => {
-    const { group, page = 1, limit = 5 } = req.query;
+    let { group, page = 1, limit = 5 } = req.query;
+
+    console.log("FETCH RECIPIENTS:", { group, page, limit });
+
+    // 🔥 Convert EVERYTHING to proper types
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    if (!group) {
+        return res.status(400).json({ message: "Group is required" });
+    }
+
+    if (isNaN(page) || isNaN(limit)) {
+        return res.status(400).json({ message: "Invalid pagination values" });
+    }
+
     const offset = (page - 1) * limit;
 
     try {
-        const [rows] = await dbConfig.execute(
-            `SELECT name, email FROM users WHERE department = ? LIMIT ? OFFSET ?`,
-            [group, Number(limit), Number(offset)]
-        );
-
         const [count] = await dbConfig.execute(
             `SELECT COUNT(*) as total FROM users WHERE department = ?`,
             [group]
         );
 
+        const query = `
+            SELECT name, email 
+            FROM users 
+            WHERE department = ? 
+            LIMIT ${limit} OFFSET ${offset}
+        `;
+
+        const [showData] = await dbConfig.execute(query, [group]);
+
         res.json({
-            data: rows,
+            data: showData,
             total: count[0].total
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("DB ERROR:", err);
         res.status(500).json({ message: "Failed to fetch recipients" });
     }
 });
@@ -264,5 +282,27 @@ app.post('api/userExist', async (req, res) => {
         res.status(500).json({ message: "db error" })
     }
 })
+
+//gemini api logic
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+app.post("/api/chat", async (req, res) => {
+    const { message } = req.body;
+
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const result = await model.generateContent(message);
+        const response = result.response.text();
+
+        res.json({ reply: response });
+
+    } catch (err) {
+        console.error("Gemini Error:", err);
+        res.status(500).json({ message: "AI error" });
+    }
+});
 
 app.listen(5000, () => console.log('Server running on port 5000'));
