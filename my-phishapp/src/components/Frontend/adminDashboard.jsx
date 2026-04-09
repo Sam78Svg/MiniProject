@@ -11,13 +11,13 @@ function AdminDashboard() {
     const [emailTemplate, setEmailTemplate] = useState("");
     const [targetGroup, setTargetGroup] = useState("All Employees");
     const [successLink, setSuccessLink] = useState("");
+    const [links, setLinks] = useState([]);
     const [showSuccess, setShowSuccess] = useState(false);
     const [reports, setReports] = useState([]);
     const [activeTab, setActiveTab] = useState("create");
 
     // SEND CAMPAIGN STATES
     const [sendMode, setSendMode] = useState("Email");
-    const [recipients, setRecipients] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState("");
     const [recipientList, setRecipientList] = useState([]);
     const [page, setPage] = useState(1);
@@ -135,7 +135,7 @@ function AdminDashboard() {
         e.preventDefault();
 
         // Create unique link FIRST
-        const generatedLink = window.location.origin + "/feedback/";
+        const generatedLink = window.location.origin + `/feedback/`;
 
         try {
             // Save campaign
@@ -161,6 +161,7 @@ function AdminDashboard() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     link_desc: generatedLink,
+                    template_type: emailTemplate,
                     link_status: "active",
                     target_group: targetGroup
                 })
@@ -216,6 +217,17 @@ function AdminDashboard() {
         const data = await res.json();
         setReports(data.data || data);
     };
+
+    // ================= Fetch Links =================
+    const fetchLinks = async () => {
+        const res = await fetch("http://localhost:5000/api/links");
+        const data = await res.json();
+        setLinks(data);
+    };
+
+    useEffect(() => {
+        if (activeTab === "send") fetchLinks()
+    }, [activeTab]);
 
     // ================= Copy =================
     const handleCopy = async () => {
@@ -389,27 +401,40 @@ function AdminDashboard() {
                         {/* TARGET GROUP SELECT */}
                         <div className="mb-3">
                             <label>Select Target Group</label>
-                            <select
-                                className="form-control"
-                                value={selectedGroup}
-                                onChange={(e) => {
-                                    setSelectedGroup(e.target.value);
-                                    setPage(1);
-                                }}
-                            >
-                                <option value="">Select Group</option>
-                                {(targetGroups || []).map((g, i) => (
-                                    <option key={i} value={g}>{g}</option>
-                                ))}
-                            </select>
+                            <input type="text" className="form-control" value={targetGroup} readOnly />
                         </div>
 
                         {/* LINK */}
                         <div className="mb-3">
                             <label>Campaign Link</label>
+                            <select name="campaignLinks" id="campaignLinks" className="form-control" onChange={(e) => {
+                                if (e.target.options[e.target.selectedIndex].getAttribute("status") === "active") {
+                                    setSuccessLink(e.target.value);
+                                    setTargetGroup(e.target.options[e.target.selectedIndex].getAttribute("targetG"));
+                                    setEmailTemplate(e.target.options[e.target.selectedIndex].getAttribute("templateType"));
+                                }
+                                else {
+                                    alert("Selected link is inactive. Please select an active link.");
+                                    setSuccessLink("");
+                                    setTargetGroup("");
+                                    setEmailTemplate("");
+                                }
+                            }}>
+                                <option value="default">{successLink}</option>
+                                {links.map(link => (
+                                    <option key={link.id} status={link.link_status} targetG={link.target_group} templateType={link.template_type} value={link.link_desc}>
+                                        {link.link_desc}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Template type*/}
+                        <div className="mb-3">
+                            <label>Template Type </label>
                             <input
                                 className="form-control"
-                                value={successLink}
+                                value={emailTemplate}
                                 readOnly
                             />
                         </div>
@@ -515,7 +540,7 @@ function AdminDashboard() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 

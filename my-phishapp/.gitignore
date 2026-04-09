@@ -11,6 +11,9 @@
 .env
 .env.*
 
+# DB structure
+DB_Structure/
+
 # misc
 .DS_Store
 

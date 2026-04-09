@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('./db.js');
+const db = require('../db');
 const router = express.Router();
 
 // Signup endpoint (updated with employee password)
