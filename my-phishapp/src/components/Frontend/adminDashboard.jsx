@@ -218,7 +218,38 @@ function AdminDashboard() {
         const data = await res.json();
         setReports(data.data || data);
     };
+    const handleDeleteAllReports = async () => {
+        if (!window.confirm("Are you sure you want to delete all reports? This action cannot be undone.")) {
+            return;
+        }
+        try {
+            const res = await fetch("http://localhost:5000/api/clear_reports", {
+                method: "DELETE"
+            });
+            const data = await res.json();
+        } catch (err) {
+            console.error("Delete reports error:", err);
+            alert("Failed to delete reports");
+        }
+    }
+    const showReports = (index) => {
+        const allReports = document.getElementsByClassName("showReports");
 
+        const current = allReports[index];
+
+        // Check if already visible
+        const isVisible = current.style.display === "table-row";
+
+        // Hide all
+        for (let i = 0; i < allReports.length; i++) {
+            allReports[i].style.display = "none";
+        }
+
+        // If it was hidden before, show it
+        if (!isVisible) {
+            current.style.display = "table-row";
+        }
+    };
     // ================= Fetch Links =================
     const fetchLinks = async () => {
         const res = await fetch("http://localhost:5000/api/links");
@@ -518,7 +549,10 @@ function AdminDashboard() {
                     <div className="card p-4">
                         <div id="headSection" className="d-flex justify-content-between align-items-center">
                             <h4 className="col-3 h2">Reports</h4>
-                            <button className="col-2 btn btn-danger">Delete All</button></div>
+                            <button className="col-2 btn btn-danger" onClick={handleDeleteAllReports}>
+                                Delete All
+                            </button>
+                        </div>
                         <table className="table mt-3">
                             <thead>
                                 <tr>
@@ -532,16 +566,26 @@ function AdminDashboard() {
 
                             <tbody>
                                 {reports.map((r, i) => (
-                                    <tr key={i}>
-                                        <td>{r.name}</td>
-                                        <td>{r.template_type}</td>
-                                        <td>{r.target_group}</td>
-                                        <td>{r.created_at}</td>
-                                        <td>
-                                            <button className="btn btn-sm btn-outline-primary">View</button>
-                                        </td>
-
-                                    </tr>
+                                    <>
+                                        <tr key={i} style={{ borderBottomColor: "none" }}>
+                                            <td>{r.name}</td>
+                                            <td>{r.template_type}</td>
+                                            <td>{r.target_group}</td>
+                                            <td>{r.created_at}</td>
+                                            <td>
+                                                <button className="btn btn-sm btn-outline-primary" onClick={() => showReports(i)}>
+                                                    View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr className="showReports" style={{ display: "none", borderBottom: "2px solid #333" }}>
+                                            <td><span className="text-primary">Email Sent: </span>{r.email_sent}</td>
+                                            <td><span className="text-warning">Receipients: </span>{r.email_sent}</td>
+                                            <td><span className="text-danger">Clicked: </span>{r.clicked}</td>
+                                            <td><span className="text-success">Reported: </span>{r.reported}</td>
+                                            <td><span className="text-info">Vuln: </span>{(parseInt(r.clicked) / parseInt(r.email_sent) * 100).toFixed(2)}%</td>
+                                        </tr>
+                                    </>
                                 ))}
                             </tbody>
                         </table>

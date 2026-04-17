@@ -12,16 +12,22 @@ router.post('/save_campaign', async (req, res) => {
         return res.status(400).json({ message: "All fields are required" });
     }
 
+    const [emailCount] = await dbConfig.execute(
+        "SELECT COUNT(*) AS count FROM users WHERE department = ?",
+        [target_group]
+    );
+
     // Save campaign info and file path to MySQL
     try {
         const sql = `
-            INSERT INTO campaigns (name, template_type, target_group,created_at)
-            VALUES (?, ?, ?,NOW())
+            INSERT INTO campaigns (name, template_type, target_group,email_sent,created_at)
+            VALUES (?, ?, ?, ?,NOW())
         `;
         await dbConfig.execute(sql, [
             campaign_name,
             email_template,
             target_group,
+            parseInt(emailCount[0].count)
         ]);
         res.json({ message: "Campaign saved successfully" });
     } catch (err) {

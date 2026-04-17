@@ -23,7 +23,7 @@ router.post('/save_report', async (req, res) => {
 router.get('/reports', async (req, res) => {
     try {
         const [reports] = await dbConfig.execute(
-            `select name,template_type,target_group,created_at from campaigns`
+            `select * from campaigns`
         );
         console.log(reports);
         res.json(reports);

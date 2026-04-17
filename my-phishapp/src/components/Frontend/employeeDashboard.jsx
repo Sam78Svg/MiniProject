@@ -14,7 +14,7 @@ function EmployeeDashboard() {
     }, []);
 
     const fetchUser = async () => {
-        fetch("http://localhost:5000/api/userExists", {
+        fetch("http://localhost:5000/api/userExist", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
