@@ -13,6 +13,7 @@ router.post('/save_report', async (req, res) => {
         );
         res.json({ success: true });
     } catch (err) {
+        ``
         console.error(err);
         res.status(500).json({ message: "DB error" });
     }
@@ -22,8 +23,9 @@ router.post('/save_report', async (req, res) => {
 router.get('/reports', async (req, res) => {
     try {
         const [reports] = await dbConfig.execute(
-            `select name as campaign_name, template_type as email_template,target_group as target_group, created_at as sent_date from campaigns`
+            `select name,template_type,target_group,created_at from campaigns`
         );
+        console.log(reports);
         res.json(reports);
     }
     catch (err) {

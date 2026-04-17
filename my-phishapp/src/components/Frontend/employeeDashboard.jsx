@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 function EmployeeDashboard() {
 
-
+    const [selectedMail, setSelectedMail] = useState(null);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
@@ -27,9 +27,32 @@ function EmployeeDashboard() {
             });
     };
 
-    fetchUser();
-
     const [mails, setMails] = useState([]);
+
+    const fetchUserEmails = async () => {
+        if (!user?.name) return;
+
+        fetch("http://localhost:5000/api/fetchEmail", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name: user.name })
+        })
+            .then(res => res.json())
+            .then(data => {
+                setMails(data.mails || []);
+            })
+            .catch(err => console.error(err));
+    };
+
+    useEffect(() => {
+        fetchUserEmails();
+        fetchUser();
+    }, [user]);
+
+    const bgColors = ["#f87171", "#60a5fa", "#34d399", "#fbbf24", "#a78bfa", "#fd6e96"];
+    const getRandomColor = () => bgColors[Math.floor(Math.random() * bgColors.length)];
 
     if (!user) {
         return <div className="text-center mt-5">Loading user...</div>;
@@ -71,26 +94,62 @@ function EmployeeDashboard() {
 
                         {/* MAILBOX */}
                         <div className="col-md-8">
-                            <div className="card shadow-sm">
+                            <div className="card rounded-3">
                                 <div className="card-header d-flex justify-content-between">
                                     <span>📥 Inbox</span>
                                     <span>{mails.length} messages</span>
                                 </div>
 
-                                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                                    {mails.length === 0 ? (
-                                        <p className="p-3 text-muted">No messages</p>
-                                    ) : (
-                                        mails.map((mail, i) => (
-                                            <div key={i} className="border-bottom p-3">
-                                                <h6>{mail.subject}</h6>
-                                                <p className="mb-1">{mail.message}</p>
-                                                <small className="text-muted">
-                                                    {new Date(mail.received_at).toLocaleString()}
-                                                </small>
-                                            </div>
-                                        ))
-                                    )}
+                                <div className="d-flex" style={{ height: "400px" }}>
+
+                                    {/* LEFT: MAIL LIST */}
+                                    <div style={{ width: "40%", borderRight: "1px solid #ddd", overflowY: "auto" }}>
+                                        {mails.length === 0 ? (
+                                            <p className="p-3 text-muted">No messages</p>
+                                        ) : (
+                                            mails.map((mail, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="p-3 border-bottom rounded-1 d-flex bg-success bg-opacity-10"
+                                                    style={{ cursor: "pointer", background: selectedMail === i ? "#e2e8f0" : "" }}
+                                                    onClick={() => setSelectedMail(i)}
+                                                >
+                                                    <section className="logo d-flex align-items-center justify-content-center rounded-circle border border-2 border-black"
+                                                        style={{ width: '40px', height: '40px', marginRight: '10px', backgroundColor: getRandomColor() }}
+                                                    >
+                                                        <span className="h6 text-dark fs-5">{mail.senderMail.charAt(0).toUpperCase()}</span>
+                                                    </section>
+                                                    <div className="infoArea"
+                                                        style={{ width: '80%' }}
+                                                    >
+                                                        <strong>{mail.subject.toUpperCase()}</strong>
+                                                        <br />
+                                                        <small className="text-muted">
+                                                            {new Date(mail.received_at).toLocaleString()}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {/* RIGHT: MAIL CONTENT */}
+                                    <div style={{ width: "60%", padding: "15px", overflowY: "auto" }}>
+                                        {selectedMail === null ? (
+                                            <p className="text-muted">Select an email to view</p>
+                                        ) : (
+                                            <>
+                                                <h5 >{mails[selectedMail].subject}</h5>
+                                                <hr />
+                                                <div style={{ fontFamily: "cursive" }}
+                                                    dangerouslySetInnerHTML={{
+                                                        __html: mails[selectedMail].message
+                                                    }}
+                                                />
+                                            </>
+                                        )}
+                                    </div>
+
                                 </div>
                             </div>
                         </div>

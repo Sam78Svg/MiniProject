@@ -22,7 +22,7 @@ function AdminDashboard() {
     const [recipientList, setRecipientList] = useState([]);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const limit = 5;
+    const limit = 20;
 
     // TEMPLATE STATES
     const [templates, setTemplates] = useState([]);
@@ -135,7 +135,7 @@ function AdminDashboard() {
         e.preventDefault();
 
         // Create unique link FIRST
-        const generatedLink = window.location.origin + `/feedback/`;
+        const generatedLink = window.location.origin + `/feedback/` + Date.now();
 
         try {
             // Save campaign
@@ -188,7 +188,9 @@ function AdminDashboard() {
     const handleSendCampaign = async () => {
         const emails = recipientList.map(r => r.email);
 
-        if (emails.length === 0) return alert("No recipients");
+        if (!emails || emails.length === 0) {
+            return alert("No recipients");
+        }
 
         const res = await fetch("http://localhost:5000/api/send_campaign", {
             method: "POST",
@@ -206,7 +208,6 @@ function AdminDashboard() {
 
         alert("Campaign sent successfully 🚀");
     };
-
     // ================= REPORTS =================
     useEffect(() => {
         if (activeTab === "reports") fetchReports();
@@ -278,10 +279,14 @@ function AdminDashboard() {
                                     }
                                 }}
                             >
-                                <option value="">Select Template</option>
+                                <option value="" onChange={
+                                    e => setCampaignName(e.target.options[e.target.selectedIndex].getAttribute("name"))
+                                }>
+                                    Select Template
+                                </option>
 
                                 {templates.map(t => (
-                                    <option key={t.id} value={t.value}>
+                                    <option key={t.id} name={t.name} value={t.value}>
                                         {t.name}
                                     </option>
                                 ))}
@@ -396,21 +401,22 @@ function AdminDashboard() {
                 {/* SEND */}
                 {activeTab === "send" && (
                     <div className="card p-4">
-                        <h4>Send Campaign</h4>
+                        <h4 className="h2 mb-4">Send Campaign</h4>
 
                         {/* TARGET GROUP SELECT */}
                         <div className="mb-3">
-                            <label>Select Target Group</label>
+                            <label className="h5 mb-1">Select Target Group</label>
                             <input type="text" className="form-control" value={targetGroup} readOnly />
                         </div>
 
                         {/* LINK */}
                         <div className="mb-3">
-                            <label>Campaign Link</label>
+                            <label className="h5 mb-1">Campaign Link</label>
                             <select name="campaignLinks" id="campaignLinks" className="form-control" onChange={(e) => {
                                 if (e.target.options[e.target.selectedIndex].getAttribute("status") === "active") {
                                     setSuccessLink(e.target.value);
                                     setTargetGroup(e.target.options[e.target.selectedIndex].getAttribute("targetG"));
+                                    setSelectedGroup(e.target.options[e.target.selectedIndex].getAttribute("targetG"));
                                     setEmailTemplate(e.target.options[e.target.selectedIndex].getAttribute("templateType"));
                                 }
                                 else {
@@ -420,10 +426,10 @@ function AdminDashboard() {
                                     setEmailTemplate("");
                                 }
                             }}>
-                                <option value="default">{successLink}</option>
+                                <option value="default">{successLink ? successLink : "Select a link"}</option>
                                 {links.map(link => (
                                     <option key={link.id} status={link.link_status} targetG={link.target_group} templateType={link.template_type} value={link.link_desc}>
-                                        {link.link_desc}
+                                        {link.link_desc} {link.link_status === "active" ? "✅" : "❌"}
                                     </option>
                                 ))}
                             </select>
@@ -431,10 +437,11 @@ function AdminDashboard() {
 
                         {/* Template type*/}
                         <div className="mb-3">
-                            <label>Template Type </label>
+                            <label className="h5 mb-1">Template Type </label>
                             <input
                                 className="form-control"
                                 value={emailTemplate}
+                                placeholder="Email Template"
                                 readOnly
                             />
                         </div>
@@ -509,8 +516,9 @@ function AdminDashboard() {
                 {/* REPORTS */}
                 {activeTab === "reports" && (
                     <div className="card p-4">
-                        <h4>Reports</h4>
-
+                        <div id="headSection" className="d-flex justify-content-between align-items-center">
+                            <h4 className="col-3 h2">Reports</h4>
+                            <button className="col-2 btn btn-danger">Delete All</button></div>
                         <table className="table mt-3">
                             <thead>
                                 <tr>
@@ -525,10 +533,10 @@ function AdminDashboard() {
                             <tbody>
                                 {reports.map((r, i) => (
                                     <tr key={i}>
-                                        <td>{r.campaign_name}</td>
-                                        <td>{r.email_template}</td>
+                                        <td>{r.name}</td>
+                                        <td>{r.template_type}</td>
                                         <td>{r.target_group}</td>
-                                        <td>{r.sent_date}</td>
+                                        <td>{r.created_at}</td>
                                         <td>
                                             <button className="btn btn-sm btn-outline-primary">View</button>
                                         </td>

@@ -119,9 +119,9 @@ router.post('/saveLink', async (req, res) => {
     }
     try {
         const sql =
-            "INSERT INTO links (link_desc, link_status, target_group,template_type) VALUES (?, ?, ?)"
+            "INSERT INTO links (link_desc, link_status, target_group,template_type) VALUES (?, ?, ?,?)"
 
-        await dbConfig.execute(sql, [link_desc, link_status, target_group]);
+        await dbConfig.execute(sql, [link_desc, link_status, target_group, template_type]);
         res.json({ message: "Link saved successfully" });
     }
     catch (err) {

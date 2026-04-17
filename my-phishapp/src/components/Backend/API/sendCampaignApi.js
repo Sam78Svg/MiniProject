@@ -41,7 +41,7 @@ router.get('/test-email', async (req, res) => {
 });
 
 router.get('/recipients', async (req, res) => {
-    let { group, page = 1, limit = 5 } = req.query;
+    let { group, page = 1, limit } = req.query;
 
     console.log("FETCH RECIPIENTS:", { group, page, limit });
 
@@ -84,5 +84,81 @@ router.get('/recipients', async (req, res) => {
         res.status(500).json({ message: "Failed to fetch recipients" });
     }
 });
+
+//fetch email for emaployee
+router.post('/fetchEmail', async (req, res) => {
+    const { name } = req.body;
+
+    try {
+        // ✅ Get user
+        const [userData] = await dbConfig.execute(
+            "SELECT * FROM users WHERE name = ?",
+            [name]
+        );
+
+        if (userData.length === 0) {
+            return res.json({ mails: [] });
+        }
+
+        const user = userData[0];
+
+        // ✅ Get campaigns for user's department
+        const [campaigns] = await dbConfig.execute(
+            "SELECT * FROM campaigns WHERE target_group = ? ORDER BY created_at DESC",
+            [user.department]
+        );
+
+        let mails = [];
+
+        for (const campaign of campaigns) {
+
+            // ✅ Get template content
+            const [templateData] = await dbConfig.execute(
+                "SELECT content FROM templates WHERE name = ?",
+                [campaign.template_type]
+            );
+
+            if (templateData.length === 0) continue;
+
+            let template = templateData[0].content;
+
+            // ✅ Get link
+            const [linkData] = await dbConfig.execute(
+                "SELECT * FROM links WHERE target_group = ? LIMIT 1",
+                [user.department]
+            );
+            const senderEmail = "admin@COMPANY.COM";
+            console.log(linkData);
+            const linkDes = linkData.length ? linkData[0].link_desc : "#";
+            const converLink = `<a href="${linkDes}">${linkDes}</a>`;
+            // ✅ Replace variables
+            const finalMessage = template
+                .replace(/{{sender}}/g, senderEmail)
+                .replace(/{{name}}/g, user.name)
+                .replace(/{{email}}/g, user.email)
+                .replace(/{{targetGroup}}/g, user.department)
+                .replace(/{{link}}/g, converLink);
+
+            mails.push({
+                subject: campaign.name,
+                message: finalMessage,
+                received_at: campaign.created_at,
+                senderMail: senderEmail
+            });
+
+            // await dbConfig.execute(
+            //     `INSERT INTO Email (email_subject, email_message,receiver,receiverEmail) VALUES (?, ?, ?, ?)`,
+            //     [campaign.name, finalMessage, user.name, user.email]
+            // );
+        }
+
+        res.json({ mails });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error fetching emails" });
+    }
+});
+
 
 module.exports = router;

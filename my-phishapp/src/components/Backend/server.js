@@ -1,5 +1,4 @@
 // Messaging utilities
-const { sendEmail, sendSMS } = require('./utils/messaging');
 require('dotenv').config();
 
 // server.js
@@ -8,6 +7,7 @@ const cors = require('cors');
 const camCreationRoutes = require('./API/campaignCreationApi.js');
 const sendCampaignRoutes = require('./API/sendCampaignApi.js');
 const dbConfig = require('./db.js');
+const reportCreationRoutes = require('./API/reportCreationApi.js');
 const authRoutes = require('./API/authApi.js');
 
 
@@ -20,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 //Api Route
 app.use("/api", camCreationRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api', reportCreationRoutes);
 app.use('/api', sendCampaignRoutes);
 
 
@@ -34,7 +35,7 @@ app.post('api/userExist', async (req, res) => {
         console.error(err);
         res.status(500).json({ message: "db error" })
     }
-})
+});
 
 //gemini api logic
 const { GoogleGenerativeAI } = require("@google/generative-ai");
